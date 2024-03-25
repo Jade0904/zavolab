@@ -31,3 +31,9 @@ This will result in **7 files** in the output folder:
 (5,6) The output of "bedtools intersect" (intersect.bed & intersect.log);
 
 (7) The result table containing the count of the reads of both events (result.csv).
+
+*Other files:*
+
+(1) myenv1.yml: the environment file.
+
+(2) sjFromSAM.awk: dependent awk script. Should be put under the same path as IRworkflow.py.
