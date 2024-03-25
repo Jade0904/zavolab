@@ -13,10 +13,6 @@ parser = ArgumentParser(description="Intron retention quantification arguments",
 parser.add_argument('--a', type = str, required = True,
                     help = "The file path in gtf format of the annotation file")
 
-# SJ.out.tab input
-parser.add_argument('--sj', type = str, required = True,
-                    help = "The file path SJ.out.tab output by STAR")
-
 # bam file input
 parser.add_argument('--bam', type = str, required = True,
                     help = "The file path in bam format output by STAR")
@@ -24,6 +20,17 @@ parser.add_argument('--bam', type = str, required = True,
 # output table of Spliced Sites
 parser.add_argument('--out', type = str, required = True,
                     help = "The output path for the table of the spliced sites")
+
+# whether to filter multimappers
+parser.add_argument('--f', help = "Specify this option to skip filtering multimappers",
+                    action = "store_true")
+
+# specify libType
+### "SF" stands for "first read same strand"
+### "SR" stands for "first read negative strand"
+### input reads should be paired
+parser.add_argument('--read_orientation', choices = ['SF', 'SR'], default = 'SR',
+                    help = "Specify whether the first read is on the same strand or the negative strand")
 
 options = parser.parse_args()
 
@@ -117,28 +124,73 @@ gtf2bed = gtf2bed.sort_values(by = ['chr', 'start', 'name'])
 
 
 
-# set SJ.out.tab path and column names
-sj_path = options.sj
-sj_columns = ['chr', 'start', 'end', 'strand', 'intron_motif', 'annotated', 'unique_read_count', 'multi_read_count', 'max_overhang']
+# set SJ-like file path
+sj_basename = filename + ".sj"
+sj_path = os.path.join(options.out, sj_basename)
 
-# read SJ.out.tab file
+# this script is originally from
+# "https://github.com/alexdobin/STAR/blob/master/extras/scripts/sjFromSAMcollapseUandM.awk"
+awk_script = "sjFromSAM.awk"
+
+# generate sj-like file from bam file
+command = f"samtools view -h {options.bam} | awk -f {awk_script} | sort -V > {sj_path}"
+subprocess.run(command, shell = True)
+
+# set column names
+sj_columns = ['chr', 'start', 'end', 'readReverse', 'mateReverse', 'firstInPair', 'secondInPair']
+
+# read SJ-like file
 sj_df = pd.read_csv(sj_path, sep = '\t', names = sj_columns)
-
-# discard the undefined strands
-sj_df = sj_df[sj_df['strand'] != 0]
 
 
 # convert strand from numbers to '+' and '-'
-def convert_strand(strand):
-    if strand == 1:
+def convert_strand_SR(row):
+    readReverse = row['readReverse']
+    mateReverse = row['mateReverse']
+    firstInPair = row['firstInPair']
+    secondInPair = row['secondInPair']
+    forward1 = (readReverse==0) & (mateReverse==1) & (firstInPair==0) & (secondInPair==1)
+    forward2 = (readReverse==1) & (mateReverse==0) & (firstInPair==1) & (secondInPair==0)
+    reverse1 = (readReverse==0) & (mateReverse==1) & (firstInPair==1) & (secondInPair==0)
+    reverse2 = (readReverse==1) & (mateReverse==0) & (firstInPair==0) & (secondInPair==1)
+    if (forward1 | forward2):
         return '+'
-    elif strand == 2:
+    elif (reverse1 | reverse2):
         return '-'
     else:
-        return '.'
+        return 0
 
-sj_df['strand'] = sj_df['strand'].apply(convert_strand)
+def convert_strand_SF(row):
+    readReverse = row['readReverse']
+    mateReverse = row['mateReverse']
+    firstInPair = row['firstInPair']
+    secondInPair = row['secondInPair']
+    forward1 = (readReverse==0) & (mateReverse==1) & (firstInPair==1) & (secondInPair==0)
+    forward2 = (readReverse==1) & (mateReverse==0) & (firstInPair==0) & (secondInPair==1)
+    reverse1 = (readReverse==0) & (mateReverse==1) & (firstInPair==0) & (secondInPair==1)
+    reverse2 = (readReverse==1) & (mateReverse==0) & (firstInPair==1) & (secondInPair==0)
+    if (forward1 | forward2):
+        return '+'
+    elif (reverse1 | reverse2):
+        return '-'
+    else:
+        return 0
 
+if options.read_orientation=='SR':
+    sj_df['strand'] = sj_df.apply(convert_strand_SR, axis=1)
+elif options.read_orientation=='SF':
+    sj_df['strand'] = sj_df.apply(convert_strand_SF, axis=1)
+
+
+sj_df = sj_df[['chr', 'start', 'end', 'strand']] # keep only useful columns
+sj_df = sj_df.drop_duplicates()
+
+# mark undefined strands
+duplicated = sj_df.duplicated(subset = ['chr', 'start', 'end'], keep = False)
+sj_df.loc[duplicated, 'strand'] = 0
+
+# discard the undefined strands
+sj_df = sj_df[sj_df['strand'] != 0]
 
 # forward and reverse strand
 sj_forward = sj_df[sj_df['strand'] == '+']
@@ -219,7 +271,8 @@ merged_df.drop_duplicates(subset = ['chr', 'start', 'end', 'strand'], keep = 'fi
 merged_df.drop('is_unknown', axis = 1, inplace = True)
 
 # save merged spliced sites
-merged_path = options.out + "/" + filename + "_merged.bed"
+merged_basename = filename + "_merged.bed"
+merged_path = os.path.join(options.out, merged_basename)
 merged_df.to_csv(merged_path, sep = '\t', index = False, header = False)
 
 
@@ -227,8 +280,19 @@ merged_df.to_csv(merged_path, sep = '\t', index = False, header = False)
 # filter multimappers
 # convert bam to bed using "bedtools bamtobed"
 # retain only useful information
-filtered_reads_path = options.out + "/" + filename + "_filteredReads.bed"
-command = f"samtools view -h -q 255 {options.bam} | samtools view -h -b | bedtools bamtobed -split -i | awk 'BEGIN{{OFS=\"\\t\"}} {{$4=\"-\"; $5=0; print}}' > {filtered_reads_path}" 
+
+### if "--f" is specified, multimapper filtering will be skipped
+### please be sure that your input bam file is already filtered before you specify "--f"
+### this is only to save computational efforts
+
+filtered_reads_basename = filename + "_filteredReads.bed"
+filtered_reads_path = os.path.join(options.out, filtered_reads_basename)
+
+if options.f:
+    command = f"bedtools bamtobed -split -i {options.bam} | awk 'BEGIN{{OFS=\"\\t\"}} {{$4=\"-\"; $5=0; print}}' > {filtered_reads_path}"
+else:
+    command = f"samtools view -h -q 255 {options.bam} | samtools view -h -b | bedtools bamtobed -split -i | awk 'BEGIN{{OFS=\"\\t\"}} {{$4=\"-\"; $5=0; print}}' > {filtered_reads_path}" 
+
 subprocess.run(command, shell = True)
 
 
@@ -251,13 +315,16 @@ filtered_countDup['score'] = 0
 # reorder the column
 filtered_countDup = filtered_countDup[['chr', 'start', 'end', 'name', 'score', 'strand']]
 # save the filtered count file
-filtered_count_path = options.out + "/" + filename + "_filteredNameAsCount.bed"
+filtered_count_basename = filename + "_filteredNameAsCount.bed"
+filtered_count_path = os.path.join(options.out, filtered_count_basename)
 filtered_countDup.to_csv(filtered_count_path, sep = '\t', index = False, header = False)
 
 
 # bedtools intersect command
-intersect_path = options.out + "/" + filename + "_intersect.bed"
-intersect_log_path = options.out + "/" + filename + "_intersect.log"
+intersect_basename = filename + "_intersect.bed"
+intersect_path = os.path.join(options.out, intersect_basename)
+intersect_log_basename = filename + "_intersect.log"
+intersect_log_path = os.path.join(options.out, intersect_log_basename)
 command = f"bedtools intersect -wa -wb -s -a {merged_path} -b {filtered_count_path} -sorted 1>{intersect_path} 2>{intersect_log_path}"
 subprocess.run(command, shell = True)
 
@@ -283,7 +350,6 @@ ir_df['count'] = ir_df.groupby(['chr', 'SS_start', 'SS_end', 'strand'])['r_num']
 
 # reads spliced at SS
 SS_reads = intersect_df[(intersect_df['SS_start']==intersect_df['r_start'])|(intersect_df['SS_end']==intersect_df['r_end'])]
-
 # count reads that support spliced event
 SS_reads['count'] = SS_reads.groupby(['chr', 'SS_start', 'SS_end', 'strand'])['r_num'].transform('sum')
 
@@ -308,5 +374,6 @@ result = result[['chr', 'SS_end', 'is_unknown', 'strand', 'ir_count', 'SS_reads_
 result.rename(columns = {'SS_end': 'SS'}, inplace = True)
 
 # save the result table
-result_path = options.out + "/" + filename + "_result.csv"
+result_basename = filename + "_result.csv"
+result_path = os.path.join(options.out, result_basename)
 result.to_csv(result_path, index = False)
