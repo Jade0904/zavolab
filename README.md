@@ -1,25 +1,33 @@
 IRworkflow.py is used to extract the count of reads that supports (1) intron retention events (2) splicing at spliced sites.
 
 ```
-python IRworkflow.py --a <gtf file> --sj <SJ.out.tab> --bam <bam file> --out <output folder>
+python IRworkflow.py --a <gtf file> --bam <bam file> --out <output folder>
 ```
 
-In which:
+**Possible options**:
+
+`--f`: If specify this option, the step of filtering multimappers will be skipped. By default, when not specifying this option, multimappers will be filtered. However, filtering is often recommended, and we offer this option in case the filtering process is done beforehand and you would like to save some computational efforts.
+
+`--read_orientation`: Options are `SR` or `SF`, in which "SR" stands for first read being opposite strand, and "SF" stands for first read being the same strand. Default is `SR`.
+
+**Inputs** are:
 
 (1) gtf file: annotation file in gtf format.
 
-(2) SJ.out.tab & bam file: output from STAR.
+(2) bam file: output from STAR.
 
-(3) output folder: for example "xx/xx/out", without "/" at the end.
+(3) output folder: for example "xx/xx/out".
 
-This will result in six files in the output folder:
+This will result in **7 files** in the output folder:
 
-(1) All the spliced sites from both gtf file and SJ.out.tab (merged.bed);
+(1) An sj-like file extracting the start/end position of introns and their strand (similar to SJ.out.tab);
 
-(2) The filtered bed file from bam file (filteredReads.bed);
+(2) All the spliced sites from both gtf file and sj file (merged.bed);
 
-(3) The filtered bed flle "groupby" the position of the reads, using the "name" column to save the count of the same reads (filteredNameAsCount.bed);
+(3) The filtered bed file from bam file (filteredReads.bed);
 
-(4,5) The output of "bedtools intersect" (intersect.bed & intersect.log);
+(4) The filtered bed flle "groupby" the position of the reads, using the "name" column to save the count of the same reads (filteredNameAsCount.bed);
 
-(6) The result table containing the count of the reads of both events (result.csv).
+(5,6) The output of "bedtools intersect" (intersect.bed & intersect.log);
+
+(7) The result table containing the count of the reads of both events (result.csv).

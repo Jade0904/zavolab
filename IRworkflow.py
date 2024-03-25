@@ -30,7 +30,7 @@ parser.add_argument('--f', help = "Specify this option to skip filtering multima
 ### "SR" stands for "first read negative strand"
 ### input reads should be paired
 parser.add_argument('--read_orientation', choices = ['SF', 'SR'], default = 'SR',
-                    help = "Specify whether the first read is on the same strand or the negative strand")
+                    help = "Specify whether the first read is on the same strand or the opposite strand")
 
 options = parser.parse_args()
 
