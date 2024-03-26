@@ -18,7 +18,7 @@ python IRworkflow.py --a <gtf file> --bam <bam file> --out <output folder>
 
 (3) output folder: for example "xx/xx/out".
 
-This will result in **7 files** in the output folder:
+**Outputs** are:
 
 (1) An sj-like file extracting the start/end position of introns and their strand (similar to SJ.out.tab);
 
@@ -30,10 +30,10 @@ This will result in **7 files** in the output folder:
 
 (5,6) The output of "bedtools intersect" (intersect.bed & intersect.log);
 
-(7) The result table containing the count of the reads of both events (result.csv).
+**(7) The result table containing the count of the reads of both events (result.csv). (This is the main result!)**
 
 *Other files:*
 
-(1) myenv1.yml: the environment file.
+myenv1.yml: the environment file.
 
-(2) sjFromSAM.awk: dependent awk script. Should be put under the same path as IRworkflow.py.
+sjFromSAM.awk: dependent awk script. Should be put under the same path as IRworkflow.py.
