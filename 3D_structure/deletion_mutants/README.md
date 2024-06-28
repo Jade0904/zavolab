@@ -1,6 +1,6 @@
 # About
 
-This folder's analysis is based on the paper *Computational modeling and prediction of deletion mutants* (https://doi.org/10.1016/j.str.2023.04.005)[1]. Inspired by this paper, we are interested in testing the protein structure metrics predicted by two protocols: (1) using AlphaFold2 only; (2) using Alphafold2 + Rosetta Relax.
+This folder's analysis is based on the paper *Computational modeling and prediction of deletion mutants* (https://doi.org/10.1016/j.str.2023.04.005) [1]. Inspired by this paper, we are interested in testing the protein structure metrics predicted by two protocols: (1) using AlphaFold2 only; (2) using Alphafold2 + Rosetta Relax.
 
 
 # Methods
@@ -18,19 +18,53 @@ Also, there are CSP (chemical shift perturbation) data from the authors of the p
 
 # Results
 
+## Reproduce
+
 The first thing I checked is whether the Figure 3B and the lower right part of Figure 3D can be reproduced. This was done in "score.ipynb". The exact same results are hard to get but we can basically have the same conclusions from the original figures and the ones I reproduced. It is reasonable to state that, when pLDDT scores averaged across all residues are plotted with delta delta G measures from Rosetta, they show a clear separation between soluble and insoluble variants.[1] And it's generally true that AlphaFold2-RosettaRelax protocol captures the relationship between delta T_M and score insufficiency.
+
+## Metrics
 
 Further, we are interested in whether the two protocols we chose differs. To be specific, we would like to know whether it's useful to apply Rosetta Relax after AlphaFold2 when predicting deletion mutants. For each mutants, we calculate the following things:
 
-(1) RMSD between wildtype and mutants, after AlphaFold2 only (af_rmsd);
+(1) RMSD between wildtype and mutants, after AlphaFold2 only (af_rmsd).
 
-(2) RMSD between wildtype and mutants, wildtype after AlphaFold2 only, mutants after AlphaFold2 + Rosetta Relax (relax_rmsd_wtAF). (not so meaningful because of the inconsistency)
+(2) RMSD between wildtype and mutants, wildtype after AlphaFold2 only, mutants after AlphaFold2 + Rosetta Relax (relax_rmsd_wtAF). *(not so meaningful because of the inconsistency)*
 
 (3) RMSD between wildtype and mutants, after AlphaFold2 + Rosetta Relax (relax_rmsd_wtRelax).
 
-(4) delta G (Rosetta energy score).
+(4) delta G (Rosetta energy score, delta_G), on the structure after AlphaFold2 + Rosetta Relax with the lowese energy score.
 
-(5) delta delta G and absolute delta delta G, basically the difference between delta G for mutants and delta G for wildtype.
+(5) delta delta G and absolute delta delta G, basically the difference between delta G for mutants and delta G for wildtype (ddG & absddG), both after AlphaFold2 + Rosetta Relax.
+
+## Correlation between different metrics
+
+### CSP vs RMSD / ddG
+
+Correlation coefficients between CSP and RMSD / ddG were calculated in "correlations.ipynb", based on three methods: pearson, kendall and spearman. These values were saved in "pearson.csv", "kendall.csv", and "spearman.csv" under "correlation_csv" folder. Different columns are:
+
+(1) af_corr_CSPvsRMSD: RMSD corresponding to 'af_rmsd' above.
+
+(2) relax_corr_wtAF_CSPvsRMSD: RMSD corresponding to 'relax_rmsd_wtAF' above.
+
+(3) relax_corr_wtRelax_CSPvsRMSD: RMSD corresponding to 'relax_rmsd_wtRelax' above.
+
+(4) relax_corr_CSPvsddG: correlation coefficients between CSP and **absolute** delta delta G, corresponding to absddG above. *(not so meaningful as there's no comparison between methods here)*
+
+### absolute ddG vs RMSD
+
+Correlation coefficients between absolute delta delta G and RMSD were calculated also in "correlations.ipynb", based on three methods: pearson, kendall and spearman. These values were saved in "pearson_absddGvsRMSD.csv", "kendall_absddGvsRMSD.csv", and "spearman_absddGvsRMSD.csv" under "correlation_csv" folder. Different columns are:
+
+(1) af_corr_absddGvsRMSD: RMSD corresponding to 'af_rmsd' above.
+
+(2) relax_corr_wtAF_absddGvsRMSD: RMSD corresponding to 'relax_rmsd_wtAF' above.
+
+(3) relax_corr_wtRelax_absddGvsRMSD: RMSD corresponding to 'relax_rmsd_wtRelax' above.
+
+## Visualization
+
+The visualization of these plots are in "plots.ipynb". Some interesting conclusion might be:
+
+(1) Swarmplots for the correlation coefficients between CSP and RMSD, within different groups, as stating above. They showed no obvious discrepancy between groups, however it can be observed that generally if deletion mutation happens in the middle of the sequence (del50, del51, del52), the correlation coefficients are the lowest (near or below 0) among all. It can be explained that, if deletion happens in the middle, the CSP values are not as accurate as other structures, since these mutants may be more unstable, thus CSP values have lower consistency with RMSD values.
 
 # Reference
 
