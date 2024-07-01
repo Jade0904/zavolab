@@ -64,7 +64,13 @@ Correlation coefficients between absolute delta delta G and RMSD were calculated
 
 The visualization of these plots are in "plots.ipynb". Some interesting conclusion might be:
 
-(1) Swarmplots for the correlation coefficients between CSP and RMSD, within different groups, as stating above. They showed no obvious discrepancy between groups, however it can be observed that generally if deletion mutation happens in the middle of the sequence (del50, del51, del52), the correlation coefficients are the lowest (near or below 0) among all. It can be explained that, if deletion happens in the middle, the CSP values are not as accurate as other structures, since these mutants may be more unstable, thus CSP values have lower consistency with RMSD values.
+(1) Swarmplots for the correlation coefficients between CSP and RMSD, within different groups, as stating above. They showed no obvious discrepancy between groups, however it can be observed that generally if deletion mutation happens in the middle of the sequence (del50, del51, del52), the correlation coefficients are the lowest (near or below 0) among all. It can be explained that, if deletion happens in the middle, the CSP values are not as accurate as other structures, since these mutants may be more unstable, thus CSP values have lower consistency with RMSD values. It is true though the correlations are all positive.
+
+(2) Boxplots for the correlation coefficients between absolute delta delta G and RMSD, within different groups, as stating above. "relax_corr_wtAF_absddGvsRMSD" shows the lowest correlation because of the inconsistency. "relax_corr_wtRelax_absddGvsRMSD" shows the highest correlation. It seems that, after Rosetta Relax, absolute delta delta G can better explain RMSD values.
+
+(3) Scatter plots for correlation coefficients against pLDDT scores. The correlation coefficients are between CSP and RMSD. It's clear that the higher the pLDDT scores are, the higher the correlation coefficients are.
+
+(4) Scatter plots for correlation coefficients against delta delta G scores. However it seems like no trends are being observed.
 
 # Reference
 
