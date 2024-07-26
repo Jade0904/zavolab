@@ -22,10 +22,40 @@ Here I listed the steps that I used to select indel examples from Protein Data B
 
 # Results
 
+## Metrics
+
 Similar to Deletion Mutants, we would like to calculate several metrics within each pair, and compare the two protocols. Most of the metrics were calculated per common residue. Common residues was defined using pairwise sequence alignment. The following metrics were calculated:
 
 (1) RMSD between canonical form and isoform (original, af, relax).
 
-(2) The difference of Rosetta energy score ($\Delta$$\Delta$G) between canonical form and isoform (original, af, relax).
+(2) The difference of Rosetta energy score (delta delta G) between canonical form and isoform (original, af, relax).
 
-(3) Rosetta energy score ($\Delta$G) for each structure (original, af, relax; for both canonical form and isoform.
+(3) Rosetta energy score (delta G) for each structure (original, af, relax; for both canonical form and isoform).
+
+(4) pLDDT per residue (af).
+
+(5) Relative solvent accessibility (RSA) per residue (original, af, relax; for both canonical form and isoform).
+
+All these metrics were saved as csv files, under the folder "pairs_csv".
+
+## Correlation between different metrics
+
+### Correlations between RMSD values
+
+The correlation coefficients (kendall's tau) were calculated between the RMSD in AlphaFold2 structures (RMSD_af) and RMSD in original structures downloaded from Protein Data Bank (RMSD_original), and between RMSD in structures after AlphaFold2 + Rosetta Relax (RMSD_relax) and RMSD_original. They are marked as "corr_af" and "corr_relax", correspondingly, and saved in "rmsd.csv" under the folder "correlations_csv".
+
+### Correlations between delta delta G values
+
+The correlation coefficients (kendall's tau) were calculated between the delta delta G values in AlphaFold2 structures (ddG_af) and delta delta G in original structures downloaded from Protein Data Bank (ddG_original), and between delta delta G in structures after AlphaFold2 + Rosetta Relax (ddG_relax) and ddG_original). They are marked as "corr_af" and "corr_relax", correspondingly, and saved in "ddG.csv" under the folder "correlations_csv".
+
+# Visualization
+
+Some visualizations are in "plots_examples.ipynb". Some interesting conclusions might be:
+
+(1) If combining all pairs together into a big dataframe (just as saved in "pairs_all.csv" under the folder "pairs_csv") and calculate the correlation coefficients between RMSD_af and RMSD_original, and between RMSD_relax and RMSD_original, we can see the former is 0.460, while the latter is 0.580, which indicates after using the protocol AlphaFold2 + Rosetta Relax, the RMSD values per residue can reflect the true distances to a greater extent compared to the protocol AlphaFold2.
+
+(2) If printing RMSD corr_af and corr_relax one against another (from "rmsd.csv"), we can see that in most of the pairs (9 out of 14, the ones above the diagonal), corr_relax is greater than corr_af. The two groups were also plotted in a box plot, and we can observe a slight increase in corr_relax compared to corr_af.
+
+(3) We calculated the absolute difference between RMSD_af and RMSD_original (marked as Diff_af), and between RMSD_relax and RMSD_original (marked as Diff_relax), which represent how RMSD after two protocols different from the true values. Per-residue pLDDT scores were binned by the distance of 10. These were plotted as violin plots and box plots. While the differences between Diff_relax and Diff_af are very close to 0 for residues with higher pLDDT scores, Diff_relax values are lower than Diff_af for residues with lower pLDDT scores, indicating that the use of Rosetta Relax can to some extend make up for the unconvinced regions of the structures predicted by AlphaFold2 and lead the structures closer to their true formations.
+
+(4) If calculating the correlation coefficients between delta G and RSA, we can see that the overall coefficients are higher in AlphaFold2 structures than the true structures; and there is also an increasing after performing Rosetta Relax compared to AlphaFold2. If categorized all residues into different groups based on hydrophobicity, it is obvious that the correlation coefficients are higher in hydrophobic residues than hydrophilic ones.
