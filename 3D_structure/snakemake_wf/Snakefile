@@ -1,0 +1,112 @@
+import os
+
+# Preparations
+configfile: "config.yaml"
+
+# Functions
+def get_alphafold_input_fastas(wildcards):
+    return config["ids"][wildcards.id]
+
+# Rules
+rule all:
+    input:
+        expand(os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax_lowestScore_perRes.sc"), id=config["ids"])
+
+rule alphafold:
+    input:
+        get_alphafold_input_fastas
+    output:
+        protected(os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/ranking_debug.json"))
+    params:
+        outdir=os.path.join(config["params"]["working_dir"], "alphafold_res/")
+    threads: 8
+    resources:
+        partition="a100",
+        gpus=1,
+        mem_mb=50000,
+        runtime=360
+    envmodules:
+        "AlphaFold/2.3.2"
+    shell:
+        "run_alphafold.sh --fasta_paths={input} "
+        "--output_dir={params.outdir} "
+        "--max_template_date=9999-12-31 "
+        "--use_gpu_relax=true "
+        "--uniref90_database_path=$UNIREF90_DATABASE_PATH "
+        "--mgnify_database_path=$MGNIFY_DATABASE_PATH "
+        "--bfd_database_path=$BFD_DATABASE_PATH "
+        "--pdb70_database_path=$PDB70_DATABASE_PATH "
+        "--template_mmcif_dir=$TEMPLATE_MMCIF_DIR "
+        "--obsolete_pdbs_path=$OBSOLETE_PDBS_PATH "
+        "--model_preset=monomer"
+
+rule model_list:
+    input:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/ranking_debug.json")
+    output:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/models.list")
+    params:
+        input_models=[os.path.join(config["params"]["working_dir"], "alphafold_res/{id}", f"ranked_{i}.pdb") for i in range(config["params"]["N_AF"])]
+    shell:
+        "ls {params.input_models} > {output}"
+
+rule relax:
+    input:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/models.list")
+    output:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax.out")
+    params:
+        relax_path=config["params"]["relax_path"],
+        constrain_relax_to_start_coords=1,
+        nstruct=5,
+        sc_path=os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax.sc"),
+        log_path=os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax.log")
+    threads: 8
+    resources:
+        partition="a100",
+        gpus=1,
+        mem_mb=50000,
+        runtime=360
+    shell:
+        "{params.relax_path} -in:file:l {input} "
+        "-relax:constrain_relax_to_start_coords {params.constrain_relax_to_start_coords} "
+        "-nstruct {params.nstruct} "
+        "-out:file:silent {output} "
+        "-out:file:scorefile {params.sc_path} > {params.log_path}"
+
+rule get_lowestTag:
+    input:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax.out")
+    output:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/lowest.tag")
+    params:
+        sc_path=os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax.sc"),
+        num_lowest=3
+    script:
+        "py_scripts/get_lowestTag.py"
+
+rule extract_relax_pdbs:
+    input:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/lowest.tag")
+    output:
+        touch(os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/extract_pdbs.done"))
+    params:
+        working_dir=config["params"]["working_dir"],
+        current_working_dir=os.path.join(config["params"]["working_dir"], "alphafold_res/{id}"),
+        extract_pdbs_path=config["params"]["extract_pdbs_path"],
+        relax_out=os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax.out")
+    script:
+        "bash_scripts/extract_relax_pdbs.sh"
+
+rule score_relax_perResidue:
+    input:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/extract_pdbs.done")
+    output:
+        os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/relax_lowestScore_perRes.sc")
+    params:
+        working_dir=config["params"]["working_dir"],
+        current_working_dir=os.path.join(config["params"]["working_dir"], "alphafold_res/{id}"),
+        per_residue_energies_path=config["params"]["per_residue_energies_path"],
+        lowest_tag=os.path.join(config["params"]["working_dir"], "alphafold_res/{id}/lowest.tag")
+    script:
+        "bash_scripts/score_relax_perResidue.sh"

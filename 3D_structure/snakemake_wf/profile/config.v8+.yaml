@@ -1,0 +1,13 @@
+executor: slurm
+jobs: 16
+cores: 64
+latency-wait: 60
+default-resources:
+    slurm_account: "zavolan"
+    mem_mb: 50000
+    slurm_partition: "a100"
+    gpus: 1
+    runtime: 360
+    slurm_extra: "'--qos=gpu1day --gpus=1'"
+
+use-singularity: true
