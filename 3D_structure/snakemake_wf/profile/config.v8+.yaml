@@ -1,13 +1,52 @@
 executor: slurm
-jobs: 16
-cores: 64
+jobs: 32
+cores: 128
 latency-wait: 60
 default-resources:
     slurm_account: "zavolan"
-    mem_mb: 50000
+    mem_mb: 90000
     slurm_partition: "a100"
     gpus: 1
-    runtime: 360
+    runtime: 1440
     slurm_extra: "'--qos=gpu1day --gpus=1'"
+set-resources:
+    all:
+        mem_mb: 50000
+        slurm_partition: "scicore"
+        runtime: 1440
+        slurm_extra: "'--qos=1day'"
+    alphafold:
+        slurm_account: "zavolan"
+        mem_mb: 90000
+        slurm_partition: "a100"
+        gpus: 1
+        runtime: 1440
+    relax:
+        mem_mb: 50000
+        slurm_partition: "scicore"
+        runtime: 1440
+        slurm_extra: "'--qos=1day'"
+    aggregate_relax_output:
+        mem_mb: 50000
+        slurm_partition: "scicore"
+        runtime: 1440
+        slurm_extra: "'--qos=1day'"
+    get_lowestTag:
+        mem_mb: 50000
+        slurm_partition: "scicore"
+        runtime: 1440
+        slurm_extra: "'--qos=1day'"
+    extract_relax_pdbs:
+        mem_mb: 50000
+        slurm_partition: "scicore"
+        runtime: 1440
+        slurm_extra: "'--qos=1day'"
+    score_relax_perResidue:
+        mem_mb: 50000
+        slurm_partition: "scicore"
+        runtime: 1440
+        slurm_extra: "'--qos=1day'"
+    
+
 
 use-singularity: true

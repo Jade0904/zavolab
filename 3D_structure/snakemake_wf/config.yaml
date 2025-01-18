@@ -1,13 +1,13 @@
-# parameters
-
 ids:
-    del12: /scicore/home/zavolan/zhu0006/3D_structure/IPA_candidates/snakemake_wf/aa_seq/del12.fasta
-    del13: /scicore/home/zavolan/zhu0006/3D_structure/IPA_candidates/snakemake_wf/aa_seq/del13.fasta
-
+  del12: /scicore/home/zavolan/zhu0006/3D_structure/IPA_candidates/snakemake_wf_betatest/aa_seq/del12.fasta
+  del13: /scicore/home/zavolan/zhu0006/3D_structure/IPA_candidates/snakemake_wf_betatest/aa_seq/del13.fasta
 params:
-    N_AF: 5 # number of AlphaFold output models
-    N_lowestTag: 3 # number of extracted pdb files after relax, with the lowest scores
-    working_dir: /scicore/home/zavolan/zhu0006/3D_structure/IPA_candidates/snakemake_wf # current working directory
-    relax_path: /scicore/home/zavolan/zhu0006/3D_structure/Rosetta/rosetta.binary.linux.release-371/main/source/bin/relax.static.linuxgccrelease # path to relax application
-    extract_pdbs_path: /scicore/home/zavolan/zhu0006/3D_structure/Rosetta/rosetta.binary.linux.release-371/main/source/bin/extract_pdbs.static.linuxgccrelease # path to extract relax pdbs application
-    per_residue_energies_path: /scicore/home/zavolan/zhu0006/3D_structure/Rosetta/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin/per_residue_energies.static.linuxgccrelease # path to calculate per-residue energies for a structure
+  N_AF: 5
+  N_lowestTag: 3
+  relax_nstruct: 5
+  extract_pdbs_path: /scicore/home/zavolan/zhu0006/3D_structure/Rosetta/rosetta.binary.linux.release-371/main/source/bin/extract_pdbs.static.linuxgccrelease
+  per_residue_energies_path: /scicore/home/zavolan/zhu0006/3D_structure/Rosetta/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin/per_residue_energies.static.linuxgccrelease
+  relax_path: /scicore/home/zavolan/zhu0006/3D_structure/Rosetta/rosetta.binary.linux.release-371/main/source/bin/relax.static.linuxgccrelease
+  res_folder: test/alphafold_res
+  working_dir: /scicore/home/zavolan/zhu0006/3D_structure/structural_stability_of_novel_orfs_hcc
+  snakemake_wf_dir: /scicore/home/zavolan/zhu0006/3D_structure/structural_stability_of_novel_orfs_hcc/snakemake_wf_gpu
