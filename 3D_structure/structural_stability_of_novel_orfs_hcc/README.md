@@ -10,6 +10,12 @@ Integrate csv file for per-residue metrics in each protein pair (readthrough vs.
 - --sl: support level (Proteomic\_Evidence, RPF\_Evidence, No\_Evidence)
 - --pid: Protein ID, [ProteinName]\_[Index]
 
+*use example*
+
+```
+python pairs_csv.py --sl Proteomics_Evidence --pid ARHGEF12_0
+```
+
 **generate_array_cmd.ipynb:**
 
 Generate cmd batch file to use pairs\_csv.py.
